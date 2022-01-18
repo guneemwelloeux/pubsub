@@ -130,12 +130,35 @@ func createSub(w io.Writer, projectID, topicID string, subID string) error {
 	sub := client.Subscription(subID)
 	exists, _ := sub.Exists(ctx)
 	if !exists {
-		sub, err = client.CreateSubscription(ctx, subID, pubsub.SubscriptionConfig{Topic: topic})
+		_, err = client.CreateSubscription(ctx, subID, pubsub.SubscriptionConfig{Topic: topic})
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
+		fmt.Printf("Subscription %s/%s created\n", topicID, subID)
 	} else {
-		fmt.Println("Already exists")
+		fmt.Println("Subscription already exists", subID)
+	}
+	return nil
+}
+
+func createTopic(w io.Writer, projectID, topicID string) error {
+	ctx := context.Background()
+	client, err := pubsub.NewClient(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("pubsub.NewClient: %v", err)
+	}
+	defer client.Close()
+
+	topic := client.Topic(topicID)
+	exists, _ := topic.Exists(ctx)
+	if !exists {
+		topic, err = client.CreateTopic(ctx, topicID)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Topic %s created\n", topicID)
+	} else {
+		fmt.Println("Topic already exists", topicID)
 	}
 	return nil
 }
@@ -192,22 +215,10 @@ func main() {
 	case "createsub":
 		createSubCmd.Parse(allCmd.Args()[1:])
 		createSub(os.Stdout, *projectFlag, *topicNameFlag, *subNameFlag)
+	case "createtopic":
+		createSubCmd.Parse(allCmd.Args()[1:])
+		createTopic(os.Stdout, *projectFlag, *topicNameFlag)
 
 	}
 
 }
-
-//func main() {
-//msgIdFlag := flag.String("id", "", "the id of the message to pull")
-//flag.Parse()
-
-//var id *string
-//if *msgIdFlag != "" {
-//id = msgIdFlag
-//}
-////err := pullMsgs(os.Stdout, "antidote-infrastructure", "dev-event-to-premium-will", 10, id)
-//err := pullMsgs(os.Stdout, "antidote-production", "production-event-to-premium", 10, id)
-//if err != nil {
-//log.Fatalln(err)
-//}
-//}
